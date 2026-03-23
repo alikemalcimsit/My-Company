@@ -31,7 +31,7 @@ async function callOpenAI(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization:  `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
       model,
@@ -49,16 +49,16 @@ async function callOpenAI(
   }
 
   const data = await res.json() as {
-  choices: Array<{ message: { content: string } }>;
-  usage: { total_tokens: number };
-};
+    choices:  Array<{ message: { content: string } }>;
+    usage:    { total_tokens: number };
+  };
+
   return {
-    text:       data.choices[0].message.content,
-    tokenUsed:  data.usage.total_tokens,
+    text:      data.choices[0].message.content,
+    tokenUsed: data.usage.total_tokens,
   };
 }
 
-// Gemini henüz mock — ileriki günlerde gerçek entegrasyon yapılacak
 async function callGeminiMock(
   system: string,
   user: string
@@ -70,7 +70,45 @@ async function callGeminiMock(
   };
 }
 
-// Claude henüz mock — ileriki günlerde gerçek entegrasyon yapılacak
+async function callGeminiReal(
+  system: string,
+  user: string
+): Promise<LLMResponse> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: system }],
+        },
+        contents: [
+          { parts: [{ text: user }] },
+        ],
+        generationConfig: { maxOutputTokens: 500 },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini hatası: ${err}`);
+  }
+
+  const data = await res.json() as {
+    candidates: Array<{
+      content: { parts: Array<{ text: string }> };
+    }>;
+    usageMetadata: { totalTokenCount: number };
+  };
+
+  return {
+    text:      data.candidates[0].content.parts[0].text,
+    tokenUsed: data.usageMetadata.totalTokenCount,
+  };
+}
+
 async function callClaudeMock(
   system: string,
   user: string

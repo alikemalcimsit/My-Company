@@ -19,14 +19,16 @@ export async function runAgent(
   const response = await callLLM(agent.model, systemPrompt, input);
 
   const result: AgentResult = {
-    agentId:   agent.id,
-    model:     agent.model,
-    output:    response.text,
-    tokenUsed: response.tokenUsed,
+    agentId:    agent.id,
+    model:      agent.model,
+    output:     response.text,
+    tokenUsed:  response.tokenUsed,
     durationMs: Date.now() - start,
   };
 
-  console.log(`[${agent.name}] tamamlandı — ${result.tokenUsed} token, ${result.durationMs}ms`);
+  console.log(
+    `[${agent.name}] tamamlandı — ${result.tokenUsed} token, ${result.durationMs}ms`
+  );
 
   return result;
 }
