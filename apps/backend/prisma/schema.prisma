@@ -53,6 +53,7 @@ enum ModelName {
   GPT_3_5_TURBO
   GEMINI_PRO
   CLAUDE_SONNET
+  LOCAL_LLM
 }
 
 model Task {

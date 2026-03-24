@@ -1,13 +1,26 @@
-import { Agent, AgentResult } from "../types";
-import { callLLM } from "./llmGateway";
+import { Agent, AgentResult }    from "../types";
+import { callLLM }               from "./llmGateway";
+import { emitToProject }         from "../api/socket";
 
 export async function runAgent(
-  agent: Agent,
-  input: string
+  agent:     Agent,
+  input:     string,
+  projectId?: string
 ): Promise<AgentResult> {
   const start = Date.now();
 
   console.log(`[${agent.name}] çalışıyor... (model: ${agent.model})`);
+
+  // Başladı eventi
+  if (projectId) {
+    emitToProject(projectId, "activity", {
+      type:      "agent:start",
+      agentName: agent.name,
+      model:     agent.model,
+      message:   `${agent.name} görevi aldı`,
+      timestamp: Date.now(),
+    });
+  }
 
   const systemPrompt = `
     Sen "${agent.name}" adlı bir AI çalışanısın.
@@ -26,9 +39,20 @@ export async function runAgent(
     durationMs: Date.now() - start,
   };
 
-  console.log(
-    `[${agent.name}] tamamlandı — ${result.tokenUsed} token, ${result.durationMs}ms`
-  );
+  console.log(`[${agent.name}] tamamlandı — ${result.tokenUsed} token, ${result.durationMs}ms`);
+
+  // Tamamlandı eventi
+  if (projectId) {
+    emitToProject(projectId, "activity", {
+      type:      "agent:done",
+      agentName: agent.name,
+      model:     agent.model,
+      message:   `${agent.name} görevi tamamladı`,
+      tokenUsed: result.tokenUsed,
+      durationMs: result.durationMs,
+      timestamp: Date.now(),
+    });
+  }
 
   return result;
 }
