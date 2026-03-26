@@ -6,8 +6,9 @@ import { api, Agent, Task, Stats } from "@/lib/api";
 import WorkflowBuilder           from "@/components/workflow/WorkflowBuilder";
 import AgentPanel                from "@/components/agents/AgentPanel";
 import { Bot, Zap, Clock, DollarSign } from "lucide-react";
+import CoderPanel from "@/components/coder/CoderPanel";
 
-type Tab = "workflow" | "agents" | "tasks";
+type Tab = "workflow" | "agents" | "tasks" | "cost" | "coder";
 
 export default function ProjectPage() {
   const { id }                  = useParams<{ id: string }>();
@@ -68,7 +69,7 @@ export default function ProjectPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-800 px-6 flex gap-1">
-        {(["workflow", "agents", "tasks"] as Tab[]).map(t => (
+        {(["workflow", "agents", "tasks", "coder", "cost"] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -78,7 +79,7 @@ export default function ProjectPage() {
                 : "border-transparent text-gray-400 hover:text-white"
             }`}
           >
-            {t === "workflow" ? "Workflow" : t === "agents" ? "Çalışanlar" : "Görevler"}
+            {t === "workflow" ? "Workflow" : t === "agents" ? "Çalışanlar" : t === "tasks" ? "Görevler" : t === "coder" ? "Coder" : "Maliyet"}
           </button>
         ))}
       </div>
@@ -99,6 +100,10 @@ export default function ProjectPage() {
             onAgentsChange={setAgents}
           />
         )}
+
+        {tab === "coder" && (
+  <CoderPanel projectId={id} agents={agents} />
+)}
         {tab === "tasks" && (
           <div className="p-6 max-w-3xl mx-auto">
             <h2 className="text-sm font-medium text-gray-400 mb-4">Son Görevler</h2>

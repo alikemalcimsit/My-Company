@@ -50,7 +50,7 @@ async function callLocalLLM(
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      max_tokens: 500,
+      max_tokens: 50000,
       temperature: 0.7,
     }),
   });
@@ -171,5 +171,64 @@ export async function callGeminiReal(
   return {
     text: data.candidates[0].content.parts[0].text,
     tokenUsed: data.usageMetadata.totalTokenCount,
+  };
+}
+
+// LM Studio için özel yanıt parse etme
+async function callLMStudioDefault(
+  system: string,
+  user: string
+): Promise<LLMResponse> {
+  const startTime = Date.now();
+  
+  const res = await fetch("http://localhost:1234/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "local-model",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    }),
+  });
+  
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`LM Studio hatası: ${err}`);
+  }
+  
+  const data = await res.json() as {
+    choices: Array<{
+      message: {
+        content: string;
+        reasoning_content?: string;  // DeepSeek-R1 için
+      };
+    }>;
+    usage?: { total_tokens: number };
+  };
+  
+  // İçeriği al — önce content, yoksa reasoning_content
+  let content = data.choices[0]?.message?.content || "";
+  
+  // Eğer content boşsa ve reasoning_content varsa onu kullan
+  if (!content && data.choices[0]?.message?.reasoning_content) {
+    content = data.choices[0].message.reasoning_content;
+    console.log("[LM Studio] reasoning_content kullanıldı");
+  }
+  
+  // Hala boşsa hata fırlat
+  if (!content) {
+    console.error("[LM Studio] Yanıt içeriği boş:", JSON.stringify(data, null, 2));
+    throw new Error("LM Studio boş yanıt döndü");
+  }
+  
+  console.log(`[LM Studio] yanıt süresi: ${Date.now() - startTime}ms, uzunluk: ${content.length}`);
+  
+  return {
+    text: content,
+    tokenUsed: data.usage?.total_tokens ?? Math.ceil((system.length + user.length) / 4),
   };
 }
